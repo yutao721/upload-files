@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单文件上传</title>
+  </head>
+
+  <body>
+    <!-- 设置multiple -->
+    <input type="file" multiple name="file" onchange="handleFileChange(event)" id="fileInput" accept="image/*" />
+    <script>
+      function handleFileChange(event) {
+        const files = event.target.files;
+        console.log(files);
+      }
+    </script>
+  </body>
+
+</html>

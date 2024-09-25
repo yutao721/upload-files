@@ -1,0 +1,48 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>剪贴板上传</title>
+  </head>
+  <style>
+    .editor-box {
+      width: 100%;
+      height: 500px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+  </style>
+
+  <body>
+    <div class="editor-box" id="editor-box" contenteditable="true">可以直接粘贴图片到这里直接上传</div>
+    <script>
+      document.getElementById('editor-box').addEventListener('paste', function (e) {
+        e.preventDefault();
+        let clipboardData = e.clipboardData || window.clipboardData;
+        let items = clipboardData.items;
+        console.log(items);
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf('image') !== -1) {
+            // 获取blob对象
+            let blob = items[i].getAsFile();
+            console.log(blob);
+            // 将blob转换为base64格式 ，展示逻辑
+            let reader = new FileReader();
+            reader.onload = function (e) {
+              let img = new Image();
+              img.src = e.target.result;
+              document.getElementById('editor-box').appendChild(img);
+            }
+            reader.readAsDataURL(blob);
+          }
+        }
+      })
+    </script>
+  </body>
+
+</html>

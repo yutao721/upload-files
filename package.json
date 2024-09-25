@@ -1,0 +1,23 @@
+{
+  "name": "files",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "connect-multiparty": "^2.2.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "fs-extra": "^11.2.0",
+    "koa-body": "^6.0.1",
+    "koa-static": "^5.0.0",
+    "koa2": "^2.0.0-alpha.7",
+    "multer": "^1.4.5-lts.1",
+    "spark-md5": "^3.0.2"
+  }
+}

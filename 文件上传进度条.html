@@ -1,0 +1,46 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件上传进度条</title>
+  </head>
+  <style>
+    #progress {
+      width: 0;
+      height: 20px;
+      background-color: #ccc;
+    }
+
+  </style>
+
+  <body>
+    <input type="file" id="file" />
+    <div id="progress"></div>
+    <script>
+      const fileInput = document.getElementById('file');
+      const progress = document.getElementById('progress');
+
+      fileInput.addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', 'http://localhost:3000/singleUpload', true);
+
+        xhr.upload.onprogress = function (event) {
+          if (event.lengthComputable) {
+            const percent = (event.loaded / event.total) * 100;
+            progress.style.width = percent + '%';
+          }
+        };
+
+        xhr.send(formData);
+      });
+    </script>
+  </body>
+
+</html>

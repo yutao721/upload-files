@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拖拽上传</title>
+  </head>
+
+  <style>
+    .drag-area {
+      width: 300px;
+      height: 200px;
+      border: 2px dashed #ccc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 20px;
+      color: #ccc;
+    }
+
+    .active {
+      border-color: #000;
+    }
+
+    #btn-submit {
+      margin: 40px auto;
+    }
+
+  </style>
+  </style>
+
+  <body>
+    <div class="drag-area">拖动文件到这里，开始上传</div>
+    <button type="button" id="btn-submit">上 传</button>
+
+    <script>
+      const dragArea = document.querySelector('.drag-area');
+      const btnSubmit = document.querySelector('#btn-submit');
+      let fileList = [];
+
+      dragArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dragArea.classList.add('active');
+      });
+
+      dragArea.addEventListener('dragleave', () => {
+        dragArea.classList.remove('active');
+      });
+
+      dragArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dragArea.classList.remove('active');
+        const files = e.dataTransfer.files;
+        console.log(files);
+        fileList = files
+        handleFiles(files);
+      });
+
+      btnSubmit.addEventListener('click', () => {
+        console.log(fileList);
+        // 上传文件逻辑
+      });
+
+      function handleFiles(files) {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            dragArea.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    </script>
+  </body>
+
+</html>

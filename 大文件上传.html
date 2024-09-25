@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大文件上传</title>
+    <script src="./node_modules/spark-md5/spark-md5.min.js" type="text/javascript" charset="utf-8"></script>
+  </head>
+
+  <body>
+    <input type="file" name="file" onchange="handleFileChange(event)" id="fileInput" />
+    <button onclick="uploadFile()">上传</button>
+    <script>
+      // import SparkMD5 from "spark-md5";
+
+      const CHUNK_SIZE = 1024 * 1024 * 5; // 每个分片的大小，这里设置为5MB
+      let file;
+      let currentChunk = 0;
+      let fileName;
+      let fileHash;
+
+      function handleFileChange(event) {
+        file = event.target.files[0];
+        fileName = file.name;
+        console.log(fileName);
+      }
+
+      async function uploadFile() {
+        if (!file) {
+          alert("请选择文件");
+          return;
+        }
+
+        // 创建分片
+        const chunks = await createChunks(file);
+        console.log(chunks);
+
+        // 计算文件内容hash值
+        calculateHash(file).then(async (hash) => {
+          fileHash = hash;
+          console.log(fileHash);
+          console.log(fileName);
+
+
+          // 校验文件、文件分片是否存在
+          const verifyRes = await verify(fileHash, fileName);
+          const { existFile, existChunks } = verifyRes.data;
+          if (existFile) return;
+
+          // // 上传文件分片
+          uploadChunks(chunks, existChunks);
+        })
+      }
+
+
+      // 创建所有的分片
+      async function createChunks(file) {
+        const chunks = [];
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+        for (let i = 0; i < totalChunks; i++) {
+          const start = i * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, file.size);
+          const chunk = file.slice(start, end);
+          chunks.push(chunk);
+        }
+        return chunks;
+      }
+
+
+      // 计算文件内容hash值
+      const calculateHash = (file) => {
+        return new Promise((resolve) => {
+          const fileReader = new FileReader();
+          fileReader.onload = function (e) {
+            const spark = new SparkMD5.ArrayBuffer();
+            spark.append(e.target.result);
+            resolve(spark.end());
+          };
+          fileReader.readAsArrayBuffer(file);
+        });
+      };
+
+      // 控制请求并发
+      const concurRequest = (taskPool, max) => {
+        return new Promise((resolve) => {
+          if (taskPool.length === 0) {
+            resolve([]);
+            return;
+          }
+
+          const results = [];
+          let index = 0;
+          let count = 0;
+
+          const request = async () => {
+            if (index === taskPool.length) return;
+            const i = index;
+            const task = taskPool[index];
+            index++;
+            try {
+              results[i] = await task();
+            } catch (err) {
+              results[i] = err;
+            } finally {
+              count++;
+              if (count === taskPool.length) {
+                resolve(results);
+              }
+              request();
+            }
+          };
+
+          const times = Math.min(max, taskPool.length);
+          for (let i = 0; i < times; i++) {
+            request();
+          }
+        });
+      };
+
+
+      // 合并分片请求
+      const mergeRequest = () => {
+        fetch("http://localhost:3000/merge", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fileHash: fileHash,
+            fileName: fileName,
+          }),
+        });
+      };
+
+      // 上传文件分片
+      const uploadChunks = async (chunks, existChunks) => {
+        const formDatas = chunks
+          .map((chunk, index) => ({
+            fileHash: fileHash.value,
+            chunkHash: fileHash.value + "-" + index,
+            chunk,
+          }))
+          .filter((item) => !existChunks.includes(item.chunkHash))
+          .map((item) => {
+            const formData = new FormData();
+            formData.append("fileHash", item.fileHash);
+            formData.append("chunkHash", item.chunkHash);
+            formData.append("chunk", item.chunk);
+            return formData;
+          });
+
+        const taskPool = formDatas.map(
+          (formData) => () =>
+            fetch("http://localhost:3000/upload", {
+              method: "POST",
+              body: formData,
+            })
+        );
+        // 控制请求并发
+        await concurRequest(taskPool, 3);
+
+        // 合并分片请求
+        mergeRequest();
+      };
+
+      // 校验文件、文件分片是否存在
+      const verify = (fileHash, fileName) => {
+        return fetch("http://localhost:3000/verify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fileHash,
+            fileName,
+          }),
+        }).then((res) => res.json());
+      };
+
+
+
+
+    </script>
+  </body>
+
+</html>
